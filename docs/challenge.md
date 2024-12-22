@@ -1,6 +1,6 @@
 # All Parts Software Engineer (ML & LLMs) Challenge
 
-## Overview
+## # Part I
 
 This is the first part of the **Software Engineer (ML & LLMs) Application Challenge**. In this phase, the model from the `.ipynb` notebook was transcribed into the `model.py` file. Each function in the `model.py` file is properly documented to explain its functionality. Additional lines were added to enable testing.
 
@@ -30,3 +30,13 @@ Several bugs were identified and addressed during this phase:
 
 ### 2. `model.py`
 - A typo was found in the `preprocess` function where the `Union` object was incorrectly defined using parentheses `()` instead of brackets `[]`. This was corrected to ensure compatibility and proper operation.
+
+# Part II: Deploying the Model as an API 
+
+The second part involves deploying the model as an **API** using **FastAPI** to predict flight delays. The API consumes a request containing flight data and returns the predicted delays. If any of the values in the request are incorrect, such as invalid operators, flight types, or months, the API will raise an `HttpException` with a 400 status code. Otherwise, it processes the data, runs the prediction using the trained model, and returns the result.
+
+Additionally, the following methods were implemented in the **`api.py`** file:
+
+- **`check_opera_exists`, `check_tipovuelo_exists`, `check_mes_exists`**: These validation methods ensure that the values for each of the required columns (`OPERA`, `TIPOVUELO`, `MES`) are valid. If any value is incorrect, an `HttpException` is raised.
+
+- **`post_predict`**: This method handles the incoming POST request, validates the flight data, preprocesses it, and returns the delay predictions from the model.
