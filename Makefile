@@ -32,7 +32,7 @@ stress-test:
 	locust -f tests/stress/api_stress.py --print-stats --html reports/stress-test.html --run-time 60s --headless --users 100 --spawn-rate 1 -H $(STRESS_URL)
 
 .PHONY: stress-test-dev
-stress-test:
+stress-test-dev:
 	# change stress url to your deployed app 
 	mkdir reports || true
 	locust -f tests/stress/api_stress.py --print-stats --html reports/stress-test.html --run-time 60s --headless --users 100 --spawn-rate 1 -H $(STRESS_URL_DEV)
