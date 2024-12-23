@@ -23,12 +23,19 @@ install:		## Install dependencies
 	pip install -r requirements-test.txt
 	pip install -r requirements.txt
 
-STRESS_URL = https://challenge-latam-1006538092866.us-central1.run.app
+STRESS_URL = https://challenge-latam-s-1006538092866.us-central1.run.app
+STRESS_URL_DEV = https://challenge-service-dev-1006538092866.us-central1.run.app
 .PHONY: stress-test
 stress-test:
 	# change stress url to your deployed app 
 	mkdir reports || true
 	locust -f tests/stress/api_stress.py --print-stats --html reports/stress-test.html --run-time 60s --headless --users 100 --spawn-rate 1 -H $(STRESS_URL)
+
+.PHONY: stress-test-dev
+stress-test:
+	# change stress url to your deployed app 
+	mkdir reports || true
+	locust -f tests/stress/api_stress.py --print-stats --html reports/stress-test.html --run-time 60s --headless --users 100 --spawn-rate 1 -H $(STRESS_URL_DEV)
 
 .PHONY: model-test
 model-test:			## Run tests and coverage

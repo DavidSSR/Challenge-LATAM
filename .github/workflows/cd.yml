@@ -1,6 +1,6 @@
-name: 'Deploy to Production'
+name: 'Continuous Delivery'
 
-on:
+on: 
   pull_request:
     types:
       - closed
@@ -8,62 +8,60 @@ on:
       - 'main'
 
 jobs:
-  build_and_push_image:
+  build-and-push:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           ref: 'main'
 
-      - name: Authenticate with Google Cloud
-        id: google_auth
-        uses: google-github-actions/auth@v1
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
-
-      - name: Install Google Cloud SDK
+          
+      - name: Intall gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Configure Docker authentication for Google Container Registry
+      - name: Configure Docker credentials
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
-
-      - name: Build and push Docker image to Artifact Registry
+    
+      - name: Build and push image
         run: |
-          IMAGE_NAME="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest"
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
+          docker build -f ${GITHUB_WORKSPACE}/Dockerfile -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest .
+          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest
 
-  deploy_to_cloudrun:
-    needs: build_and_push_image
+  deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           ref: 'main'
 
-      - name: Authenticate with Google Cloud
-        id: google_auth
-        uses: google-github-actions/auth@v1
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Install Google Cloud SDK
+      - name: Intall gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Deploy the service to Cloud Run
-        id: cloud_run_deploy
-        uses: google-github-actions/deploy-cloudrun@v1
+      - name: Deploy to Cloud Run
+        id: 'deploy'
+        uses: 'google-github-actions/deploy-cloudrun@v1'
         with:
           service: 'challenge-service-prod'
           image: 'us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest'
 
-      - name: Output deployed URL
-        run: |
-            echo "Deployed URL: ${{ steps.cloud_run_deploy.outputs.url }}"
+      - name: 'Print URL'
+        run: echo ${{ steps.deploy.outputs.url }}
