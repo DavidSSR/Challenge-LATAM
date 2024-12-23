@@ -1,4 +1,4 @@
-name: 'Continuous Integration'
+name: 'CI Pipeline for Deployment'
 
 on:
   push:
@@ -9,96 +9,96 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build image
+      - name: Build test image
         run: docker build -f ${GITHUB_WORKSPACE}/Dockerfile.tests -t test_image .
 
-      - name: Run tests on image
+      - name: Execute tests on the image
         id: run-tests
         run: |
           docker run --rm test_image
 
-  build-and-push:
+  build-and-push-image:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
 
-      - name: Google Auth
+      - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
           
-      - name: Intall gcloud CLI
+      - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Configure Docker credentials
+      - name: Configure Docker authentication for GCP
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
     
-      - name: Build and push image
+      - name: Build and push Docker image to Artifact Registry
         run: |
           docker build -f ${GITHUB_WORKSPACE}/Dockerfile -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-dev:latest .
           docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-dev:latest
 
-  deploy:
-    needs: build-and-push
+  deploy-to-cloud-run:
+    needs: build-and-push-image
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
         
-      - name: Google Auth
+      - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Intall gcloud CLI
+      - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Deploy to Cloud Run
+      - name: Deploy Docker image to Cloud Run
         id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@v1'
         with:
           service: 'challenge-service-dev'
           image: 'us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-dev:latest'
 
-  test-deployed-image:
-    needs: deploy
+  perform-stress-test:
+    needs: deploy-to-cloud-run
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image for test
+      - name: Build Docker image for stress test
         run: |
           docker build -f ${GITHUB_WORKSPACE}/Dockerfile.stress -t test_image .
           docker run --rm test_image
 
   create-release-branch:
-    needs: test-deployed-image
+    needs: perform-stress-test
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
 
-      - name: Create release branch with tag name
+      - name: Create release branch with commit SHA
         run: |
           git checkout -b release/${{ github.sha }}
           git push --set-upstream origin release/${{ github.sha }}
@@ -110,12 +110,12 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout release branch
         uses: actions/checkout@v3
         with:
           ref: 'release/${{ github.sha }}'
 
-      - name: Create PR on main branche
+      - name: Create PR to main branch
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "release/${{ github.sha }}"
@@ -124,5 +124,3 @@ jobs:
           pr_title: "Merge release/${{ github.sha }} to main"
           pr_body: "Merge release/${{ github.sha }} to main after successful CI pipeline"
           pr_label: "automerge"
-
-      

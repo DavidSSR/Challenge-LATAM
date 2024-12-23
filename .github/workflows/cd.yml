@@ -12,18 +12,18 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
         with:
           ref: 'main'
 
-      - name: Google Auth
+      - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
           
-      - name: Intall gcloud CLI
+      - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -31,27 +31,27 @@ jobs:
       - name: Configure Docker credentials
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
     
-      - name: Build and push image
+      - name: Build and push production image
         run: |
           docker build -f ${GITHUB_WORKSPACE}/Dockerfile -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest .
           docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest
 
-  deploy:
+  deploy-to-cloud-run:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
         with:
           ref: 'main'
 
-      - name: Google Auth
+      - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Intall gcloud CLI
+      - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -63,5 +63,5 @@ jobs:
           service: 'challenge-service-prod'
           image: 'us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest'
 
-      - name: 'Print URL'
+      - name: Print deployed service URL
         run: echo ${{ steps.deploy.outputs.url }}
