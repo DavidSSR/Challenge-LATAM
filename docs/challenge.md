@@ -31,7 +31,7 @@ Several bugs were identified and addressed during this phase:
 ### 2. `model.py`
 - A typo was found in the `preprocess` function where the `Union` object was incorrectly defined using parentheses `()` instead of brackets `[]`. This was corrected to ensure compatibility and proper operation.
 
-# Part II: Deploying the Model as an API 
+# Part II
 
 The second part involves deploying the model as an **API** using **FastAPI** to predict flight delays. The API consumes a request containing flight data and returns the predicted delays. If any of the values in the request are incorrect, such as invalid operators, flight types, or months, the API will raise an `HttpException` with a 400 status code. Otherwise, it processes the data, runs the prediction using the trained model, and returns the result.
 
@@ -40,3 +40,17 @@ Additionally, the following methods were implemented in the **`api.py`** file:
 - **`check_opera_exists`, `check_tipovuelo_exists`, `check_mes_exists`**: These validation methods ensure that the values for each of the required columns (`OPERA`, `TIPOVUELO`, `MES`) are valid. If any value is incorrect, an `HttpException` is raised.
 
 - **`post_predict`**: This method handles the incoming POST request, validates the flight data, preprocesses it, and returns the delay predictions from the model.
+
+# Part III
+
+In this section, you will find the Dockerized app deployed on GCP. The Dockerfile is configured to use Python 3.9 to avoid errors and additional build time related to package dependencies like numpy and pandas. This Python version helps optimize the process of building and deploying the image to GCP Container Registry. The app is deployed at the following URL: https://challenge-latam-1006538092866.us-central1.run.app .
+
+During the stress test, there were no failures, with an average time of 450ms per request, handling 4477 requests in total. Below are the response time percentiles:
+
+
+## Response time percentiles (approximated)
+
+| Type      | Name      | 50% | 66% | 75% | 80% | 90% | 95% | 98% | 99% | 99.9% | 99.99% | 100% | # reqs |
+|-----------|-----------|-----|-----|-----|-----|-----|-----|-----|-----|-------|--------|------|--------|
+| POST      | /predict  | 360 | 450 | 500 | 560 | 630 | 680 | 740 | 760 | 800   | 900    | 900  | 4477   |
+| Aggregated|           | 360 | 450 | 500 | 560 | 630 | 680 | 740 | 760 | 800   | 900    | 900  | 4477   |

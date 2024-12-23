@@ -1,7 +1,7 @@
 import fastapi
 from challenge.model import DelayModel 
 import pandas as pd
-from pydantic import BaseModel,field_validator
+from pydantic import BaseModel
 
 app = fastapi.FastAPI()
 delay_model = DelayModel()

@@ -36,11 +36,11 @@ class DelayModel:
             - self.weight_handler: Handler for balancing the model through weights, initialized as None.
         """
         self.weight_handler = None
+        self.top_features = top_features
         try:
             self._model = pickle.load(open("data/model.sav", 'rb'))
         except:
             self._model = None 
-            self.top_features = top_features
     
 
     def preprocess(
