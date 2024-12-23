@@ -1,0 +1,12 @@
+FROM python:3.9e
+WORKDIR /project
+ 
+COPY ./requirements.txt /project/requirements.txt
+COPY ./requirements-test.txt /project/requirements-test.txt
+ 
+RUN pip install --no-cache-dir --upgrade -r /project/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /project/requirements-test.txt
+ 
+COPY ./ /project/
+
+CMD ["make", "tests"]
