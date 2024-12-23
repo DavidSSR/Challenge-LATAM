@@ -54,3 +54,40 @@ During the stress test, there were no failures, with an average time of 450ms pe
 |-----------|-----------|-----|-----|-----|-----|-----|-----|-----|-----|-------|--------|------|--------|
 | POST      | /predict  | 360 | 450 | 500 | 560 | 630 | 680 | 740 | 760 | 800   | 900    | 900  | 4477   |
 | Aggregated|           | 360 | 450 | 500 | 560 | 630 | 680 | 740 | 760 | 800   | 900    | 900  | 4477   |
+
+
+# Part IV
+## CI/CD Pipeline Overview
+This pipeline automates testing, building, and deployment for the develop and main branches.
+
+### CI Pipeline
+**Trigger:** Runs on push to the develop branch.
+
+1. **Build & Test:**
+   - Build `Dockerfile.tests` image to run tests.
+
+2. **Build & Push Dev Image:**
+   - Build and push development image to GCP Artifact Registry.
+
+3. **Deploy to Cloud Run (Dev):**
+   - Deploy image to Cloud Run for development testing.
+
+4. **Stress Test:**
+   - Build and run `Dockerfile.stress` for performance testing.
+
+5. **Release Branch:**
+   - Create release branch and open a PR to main.
+
+### CD Pipeline
+**Trigger:** Runs when the release PR is merged into main.
+
+1. **Build & Push Prod Image:**
+   - Build and push production image to GCP Artifact Registry.
+
+2. **Deploy to Cloud Run (Prod):**
+   - Deploy image to Cloud Run for production.
+
+3. **Output Prod URL:**
+   - Print the deployed production URL for verification.
+
+This CI/CD setup automates testing, building, and deployment, ensuring production-ready code is always delivered efficiently.
