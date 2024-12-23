@@ -9,28 +9,34 @@ on:
 
 jobs:
   build-and-push:
+    # This job will run only if the pull request is merged
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the source code from the 'main' branch
       - name: Checkout source code
         uses: actions/checkout@v3
         with:
           ref: 'main'
 
+      # Step 2: Authenticate with Google Cloud using service account credentials
       - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
           
+      # Step 3: Install gcloud CLI to interact with Google Cloud
       - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      # Step 4: Configure Docker to authenticate with Google Cloud Artifact Registry
       - name: Configure Docker credentials
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
     
+      # Step 5: Build and push the production Docker image to the GCP registry
       - name: Build and push production image
         run: |
           docker build -f ${GITHUB_WORKSPACE}/Dockerfile -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest .
@@ -40,22 +46,26 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the source code from the 'main' branch
       - name: Checkout source code
         uses: actions/checkout@v3
         with:
           ref: 'main'
 
+      # Step 2: Authenticate with Google Cloud using service account credentials
       - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
+      # Step 3: Install gcloud CLI to interact with Google Cloud
       - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      # Step 4: Deploy the built Docker image to Cloud Run
       - name: Deploy to Cloud Run
         id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@v1'
@@ -63,5 +73,6 @@ jobs:
           service: 'challenge-service-prod'
           image: 'us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest'
 
+      # Step 5: Print the URL of the deployed Cloud Run service for verification
       - name: Print deployed service URL
         run: echo ${{ steps.deploy.outputs.url }}

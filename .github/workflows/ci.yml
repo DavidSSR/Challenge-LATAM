@@ -9,15 +9,19 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the source code from the 'develop' branch
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      # Step 2: Set up Docker Buildx for building multi-platform images
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Step 3: Build the test Docker image using the 'Dockerfile.tests'
       - name: Build test image
         run: docker build -f ${GITHUB_WORKSPACE}/Dockerfile.tests -t test_image .
 
+      # Step 4: Run tests on the built Docker image
       - name: Execute tests on the image
         id: run-tests
         run: |
@@ -27,23 +31,28 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the source code from the 'develop' branch
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      # Step 2: Authenticate with Google Cloud using service account credentials
       - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
           
+      # Step 3: Install gcloud CLI to interact with Google Cloud
       - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      # Step 4: Configure Docker to authenticate with Google Cloud Artifact Registry
       - name: Configure Docker authentication for GCP
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
     
+      # Step 5: Build and push the development Docker image to the GCP registry
       - name: Build and push Docker image to Artifact Registry
         run: |
           docker build -f ${GITHUB_WORKSPACE}/Dockerfile -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-dev:latest .
@@ -53,37 +62,45 @@ jobs:
     needs: build-and-push-image
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the source code from the 'develop' branch
       - name: Checkout source code
         uses: actions/checkout@v3
         
+      # Step 2: Authenticate with Google Cloud using service account credentials
       - name: Authenticate with Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v1' 
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
+      # Step 3: Install gcloud CLI to interact with Google Cloud
       - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      # Step 4: Deploy the built Docker image to Cloud Run for development environment
       - name: Deploy Docker image to Cloud Run
         id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@v1'
         with:
           service: 'challenge-service-dev'
           image: 'us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-dev:latest'
+          flags: '--allow-unauthenticated'
 
   perform-stress-test:
     needs: deploy-to-cloud-run
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the source code from the 'develop' branch
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      # Step 2: Set up Docker Buildx for building multi-platform images
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Step 3: Build and run Docker image for stress testing
       - name: Build Docker image for stress test
         run: |
           docker build -f ${GITHUB_WORKSPACE}/Dockerfile.stress -t test_image .
@@ -95,9 +112,11 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the source code from the 'develop' branch
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      # Step 2: Create a release branch using the commit SHA
       - name: Create release branch with commit SHA
         run: |
           git checkout -b release/${{ github.sha }}
@@ -110,17 +129,19 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the release branch created in the previous job
       - name: Checkout release branch
         uses: actions/checkout@v3
         with:
           ref: 'release/${{ github.sha }}'
 
+      # Step 2: Create a pull request from the release branch to the 'main' branch
       - name: Create PR to main branch
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "release/${{ github.sha }}"
           destination_branch: "main"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.MY_GITHUB_TOKEN }}
           pr_title: "Merge release/${{ github.sha }} to main"
           pr_body: "Merge release/${{ github.sha }} to main after successful CI pipeline"
           pr_label: "automerge"
