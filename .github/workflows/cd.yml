@@ -72,6 +72,7 @@ jobs:
         with:
           service: 'challenge-service-prod'
           image: 'us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REGISTRY }}/challenge-image-prod:latest'
+          flags: '--allow-unauthenticated'
 
       # Step 5: Print the URL of the deployed Cloud Run service for verification
       - name: Print deployed service URL
