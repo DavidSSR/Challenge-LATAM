@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir --upgrade -r /project/requirements-test.txt
  
 COPY ./ /project/
 
-CMD ["make",  "stress-test-dev"]
+CMD ["make",  "stress-test"]
